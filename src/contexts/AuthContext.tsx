@@ -2,19 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { API_CONFIG } from '@/lib/config'
+import { authService, User } from '@/services'
 
-interface User {
-  id: string
-  email: string
-  name: string
-}
+// User interface is now imported from services
 
 interface AuthContextType {
   user: User | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  signup: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
   loading: boolean
 }
@@ -28,35 +24,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
+    const storedToken = authService.getStoredToken()
     if (storedToken) {
       setToken(storedToken)
       // Verify token with backend
-      verifyToken(storedToken)
+      verifyToken()
     } else {
       setLoading(false)
     }
   }, [])
 
-  const verifyToken = async (token: string) => {
+  const verifyToken = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      } else {
-        localStorage.removeItem('token')
-        setToken(null)
-      }
+      const userData = await authService.getCurrentUser()
+      setUser(userData)
     } catch (error) {
       console.error('Token verification failed:', error)
-      localStorage.removeItem('token')
+      authService.logout()
       setToken(null)
+      setUser(null)
     } finally {
       setLoading(false)
     }
@@ -64,22 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Login failed')
-      }
-
-      const data = await response.json()
-      localStorage.setItem('token', data.token)
-      setToken(data.token)
-      setUser(data.user)
+      const { token: newToken, user: userData } = await authService.login({ email, password })
+      setToken(newToken)
+      setUser(userData)
       router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
@@ -87,24 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signup = async (name: string, email: string, password: string) => {
+  const signup = async (username: string, email: string, password: string) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SIGNUP}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Signup failed')
-      }
-
-      const data = await response.json()
-      localStorage.setItem('token', data.token)
-      setToken(data.token)
-      setUser(data.user)
+      const { token: newToken, user: userData } = await authService.register({ username, email, password })
+      setToken(newToken)
+      setUser(userData)
       router.push('/dashboard')
     } catch (error) {
       console.error('Signup error:', error)
@@ -113,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
+    authService.logout()
     setToken(null)
     setUser(null)
     router.push('/login')

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNotes } from '@/contexts/NotesContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { API_CONFIG, WS_CONFIG } from '@/lib/config'
+import { websocketService, notesService } from '@/services'
 
 interface NoteEditorProps {
   noteId: string
@@ -14,7 +14,6 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
   const { token } = useAuth()
   const [content, setContent] = useState(activeNote?.content || '')
   const [isConnected, setIsConnected] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -29,59 +28,42 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     }
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
+      websocketService.disconnect()
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
     }
   }, [token, noteId])
 
-  const connectWebSocket = () => {
+  const connectWebSocket = async () => {
     try {
-      const wsUrl = `${API_CONFIG.WS_URL}/ws/notes/${noteId}?token=${token}`
-      wsRef.current = new WebSocket(wsUrl)
+      if (!token) return
 
-      wsRef.current.onopen = () => {
-        setIsConnected(true)
-        console.log('WebSocket connected')
-      }
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          
-          if (data.type === 'edit_note') {
-            // Update content from other users
-            if (data.content !== content) {
-              setContent(data.content)
-              updateNoteContent(noteId, data.content)
-            }
+      await websocketService.connect(noteId, token)
+      
+      // Set up event handlers
+      websocketService.on({
+        connected: () => {
+          setIsConnected(true)
+          console.log('WebSocket connected')
+        },
+        note_updated: (data) => {
+          // Update content from other users
+          if (data.content !== content) {
+            setContent(data.content)
+            updateNoteContent(noteId, data.content)
           }
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
+        },
+        error: (data) => {
+          console.error('WebSocket error:', data.message)
+          setIsConnected(false)
         }
-      }
+      })
 
-      wsRef.current.onclose = () => {
-        setIsConnected(false)
-        console.log('WebSocket disconnected')
-        
-        // Attempt to reconnect after configured interval
-        setTimeout(() => {
-          if (token && noteId) {
-            connectWebSocket()
-          }
-        }, WS_CONFIG.RECONNECT_INTERVAL)
-      }
-
-      wsRef.current.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        setIsConnected(false)
-      }
+      setIsConnected(websocketService.getConnectionStatus() === 'connected')
     } catch (error) {
       console.error('Failed to connect WebSocket:', error)
+      setIsConnected(false)
     }
   }
 
@@ -95,30 +77,13 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
     }
 
     timeoutRef.current = setTimeout(() => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({
-          type: 'edit_note',
-          noteId,
-          content: newContent
-        }))
-      }
-    }, WS_CONFIG.DEBOUNCE_DELAY)
+      websocketService.editNote(newContent)
+    }, 500) // 500ms debounce
   }
 
   const saveNote = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.NOTES}/${noteId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ content })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save note')
-      }
+      await notesService.updateNote(noteId, { content })
     } catch (error) {
       console.error('Failed to save note:', error)
     }

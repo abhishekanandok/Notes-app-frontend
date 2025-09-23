@@ -7,7 +7,7 @@ import { useNotes } from '@/contexts/NotesContext'
 import { Navbar } from '@/components/Navbar'
 import { NoteEditor } from '@/components/NoteEditor'
 import { ArrowLeft } from 'lucide-react'
-import { API_CONFIG } from '@/lib/config'
+import { notesService } from '@/services'
 
 export default function NotePage() {
   const params = useParams()
@@ -36,23 +36,15 @@ export default function NotePage() {
     setError('')
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.NOTES}/${noteId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const note = await response.json()
-        setActiveNote(note)
-      } else if (response.status === 404) {
+      const note = await notesService.getNoteById(noteId)
+      setActiveNote(note)
+    } catch (error: any) {
+      console.error('Failed to fetch note:', error)
+      if (error.message.includes('404') || error.message.includes('not found')) {
         setError('Note not found')
       } else {
         setError('Failed to load note')
       }
-    } catch (error) {
-      console.error('Failed to fetch note:', error)
-      setError('Failed to load note')
     } finally {
       setLoading(false)
     }

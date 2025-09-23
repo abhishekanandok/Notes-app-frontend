@@ -8,11 +8,10 @@ import { FolderList } from '@/components/FolderList'
 import { NoteList } from '@/components/NoteList'
 import { SearchBar } from '@/components/SearchBar'
 import { useRouter } from 'next/navigation'
-import { API_CONFIG } from '@/lib/config'
 
 export default function DashboardPage() {
   const { user, token, loading: authLoading } = useAuth()
-  const { folders, setLoading } = useNotes()
+  const { fetchFolders, fetchNotes } = useNotes()
   const router = useRouter()
 
   useEffect(() => {
@@ -24,29 +23,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (token) {
       fetchFolders()
+      fetchNotes()
     }
-  }, [token])
-
-  const fetchFolders = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.FOLDERS}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        // Update folders in context
-        // This would be implemented in the NotesContext
-      }
-    } catch (error) {
-      console.error('Failed to fetch folders:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [token, fetchFolders, fetchNotes])
 
   if (authLoading) {
     return (
