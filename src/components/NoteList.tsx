@@ -21,13 +21,13 @@ export function NoteList() {
     return (
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             Search Results ({filteredNotes.length})
           </h2>
         </div>
         
         {filteredNotes.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8 text-muted-foreground">
             No notes found matching "{searchQuery}"
           </div>
         ) : (
@@ -36,18 +36,18 @@ export function NoteList() {
               <div
                 key={note.id}
                 onClick={() => openNote(note.id)}
-                className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:shadow-md transition-shadow cursor-pointer"
+                className="p-4 border border-border rounded-lg bg-card hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-start space-x-3">
-                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <h3 className="text-sm font-medium text-foreground truncate">
                       {note.title}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {note.content}
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       {new Date(note.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -63,20 +63,20 @@ export function NoteList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2 className="text-lg font-semibold text-foreground">
           Recent Notes
         </h2>
         <button
           onClick={createNewNote}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring"
         >
           <Plus className="h-4 w-4 mr-2" />
           New Note
         </button>
       </div>
       
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+      <div className="text-center py-8 text-muted-foreground">
+        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
         <p>No notes yet. Create your first note to get started!</p>
       </div>
     </div>

@@ -50,8 +50,8 @@ export default function DashboardPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
@@ -61,10 +61,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="flex h-[calc(100vh-4rem)]">
-        <div className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="w-80 border-r border-border bg-card">
           <div className="p-4">
             <SearchBar />
           </div>
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-6">
               Welcome back, {user.name}
             </h1>
             <NoteList />
