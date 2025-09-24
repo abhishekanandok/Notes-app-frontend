@@ -1,14 +1,79 @@
-import { API_CONFIG, WS_CONFIG } from './config'
-import type {
-  WSMessage,
-  WSError,
-  WSConnected,
-  WSJoined,
-  WSNoteUpdated,
-  WSUserJoined,
-  WSUserLeft,
-  WSCursorPosition
-} from './config'
+// WebSocket message types
+export interface WSMessage {
+  type: string
+  [key: string]: unknown
+}
+
+export interface WSError {
+  type: 'error'
+  message: string
+}
+
+export interface WSConnected {
+  type: 'connected'
+  message: string
+  user: {
+    id: string
+    username: string
+  }
+}
+
+export interface WSJoined {
+  type: 'joined'
+  noteId: string
+  timestamp: string
+}
+
+export interface WSNoteUpdated {
+  type: 'note_updated'
+  content: string
+  title?: string
+  updatedBy: {
+    id: string
+    username: string
+  }
+  timestamp: string
+}
+
+export interface WSUserJoined {
+  type: 'user_joined'
+  user: {
+    id: string
+    username: string
+  }
+  timestamp: string
+}
+
+export interface WSUserLeft {
+  type: 'user_left'
+  user: {
+    id: string
+    username: string
+  }
+  timestamp: string
+}
+
+export interface WSCursorPosition {
+  type: 'cursor_position'
+  position: {
+    line: number
+    column: number
+  }
+  user: {
+    id: string
+    username: string
+  }
+  timestamp: string
+}
+
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000'
+
+// WebSocket configuration
+const WS_CONFIG = {
+  RECONNECT_INTERVAL: 3000,
+  DEBOUNCE_DELAY: 500,
+  MAX_RECONNECT_ATTEMPTS: 5,
+}
 
 export type WSEventType = 
   | 'connected'
@@ -29,42 +94,44 @@ export type WSEventHandlers = {
   error?: (data: WSError) => void
 }
 
-class WebSocketService {
-  private ws: WebSocket | null = null
-  private noteId: string | null = null
-  private token: string | null = null
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = WS_CONFIG.MAX_RECONNECT_ATTEMPTS
-  private reconnectTimeout: NodeJS.Timeout | null = null
-  private eventHandlers: WSEventHandlers = {}
-  private isConnecting = false
+const useWebSocketService = () => {
+  let ws: WebSocket | null = null
+  let noteId: string | null = null
+  let token: string | null = null
+  let reconnectAttempts = 0
+  const maxReconnectAttempts = WS_CONFIG.MAX_RECONNECT_ATTEMPTS
+  let reconnectTimeout: NodeJS.Timeout | null = null
+  let editTimeout: NodeJS.Timeout | null = null
+  let eventHandlers: WSEventHandlers = {}
+  let isConnecting = false
 
   /**
    * Connect to a note's WebSocket
    */
-  async connect(noteId: string, token: string): Promise<void> {
-    if (this.ws?.readyState === WebSocket.OPEN && this.noteId === noteId) {
+  const connect = async (newNoteId: string, newToken: string): Promise<void> => {
+    if (ws?.readyState === WebSocket.OPEN && noteId === newNoteId) {
       return // Already connected to this note
     }
 
-    this.disconnect() // Disconnect from any existing connection
-    this.noteId = noteId
-    this.token = token
-    this.isConnecting = true
+    disconnect() // Disconnect from any existing connection
+    noteId = newNoteId
+    token = newToken
+    isConnecting = true
 
     try {
-      const wsUrl = `${API_CONFIG.WS_URL}/ws/notes/${noteId}?token=${token}`
-      this.ws = new WebSocket(wsUrl)
+      const wsUrl = `${WS_URL}/ws/notes/${newNoteId}?token=${newToken}`
+      console.log('Connecting to WebSocket:', wsUrl)
+      ws = new WebSocket(wsUrl)
 
-      this.ws.onopen = this.handleOpen.bind(this)
-      this.ws.onmessage = this.handleMessage.bind(this)
-      this.ws.onclose = this.handleClose.bind(this)
-      this.ws.onerror = this.handleError.bind(this)
+      ws.onopen = handleOpen
+      ws.onmessage = handleMessage
+      ws.onclose = handleClose
+      ws.onerror = handleError
 
       // Wait for connection to be established
-      await this.waitForConnection()
+      await waitForConnection()
     } catch (error) {
-      this.isConnecting = false
+      isConnecting = false
       throw error
     }
   }
@@ -72,29 +139,34 @@ class WebSocketService {
   /**
    * Disconnect from WebSocket
    */
-  disconnect(): void {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = null
+  const disconnect = (): void => {
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout)
+      reconnectTimeout = null
     }
 
-    if (this.ws) {
-      this.ws.close()
-      this.ws = null
+    if (editTimeout) {
+      clearTimeout(editTimeout)
+      editTimeout = null
     }
 
-    this.noteId = null
-    this.token = null
-    this.reconnectAttempts = 0
-    this.isConnecting = false
+    if (ws) {
+      ws.close()
+      ws = null
+    }
+
+    noteId = null
+    token = null
+    reconnectAttempts = 0
+    isConnecting = false
   }
 
   /**
    * Send a message to the WebSocket
    */
-  send(message: WSMessage): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message))
+  const send = (message: WSMessage): void => {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message))
     } else {
       console.warn('WebSocket is not connected')
     }
@@ -103,26 +175,34 @@ class WebSocketService {
   /**
    * Join the note (send join_note message)
    */
-  joinNote(): void {
-    this.send({ type: 'join_note' })
+  const joinNote = (): void => {
+    send({ type: 'join_note' })
   }
 
   /**
-   * Send note edit update
+   * Send note edit update with debouncing
    */
-  editNote(content: string, title?: string): void {
-    this.send({
-      type: 'edit_note',
-      content,
-      title
-    })
+  const editNote = (content: string, title?: string): void => {
+    // Clear any existing timeout
+    if (editTimeout) {
+      clearTimeout(editTimeout)
+    }
+
+    // Debounce the edit to avoid too many updates
+    editTimeout = setTimeout(() => {
+      send({
+        type: 'edit_note',
+        content,
+        title
+      })
+    }, WS_CONFIG.DEBOUNCE_DELAY)
   }
 
   /**
    * Send cursor position update
    */
-  updateCursorPosition(line: number, column: number): void {
-    this.send({
+  const updateCursorPosition = (line: number, column: number): void => {
+    send({
       type: 'cursor_position',
       position: { line, column }
     })
@@ -131,41 +211,41 @@ class WebSocketService {
   /**
    * Register event handlers
    */
-  on(handlers: WSEventHandlers): void {
-    this.eventHandlers = { ...this.eventHandlers, ...handlers }
+  const on = (handlers: WSEventHandlers): void => {
+    eventHandlers = { ...eventHandlers, ...handlers }
   }
 
   /**
    * Remove event handlers
    */
-  off(eventType?: WSEventType): void {
+  const off = (eventType?: WSEventType): void => {
     if (eventType) {
-      delete this.eventHandlers[eventType]
+      delete eventHandlers[eventType]
     } else {
-      this.eventHandlers = {}
+      eventHandlers = {}
     }
   }
 
   /**
    * Get connection status
    */
-  getConnectionStatus(): 'connecting' | 'connected' | 'disconnected' | 'error' {
-    if (this.isConnecting) return 'connecting'
-    if (this.ws?.readyState === WebSocket.OPEN) return 'connected'
-    if (this.ws?.readyState === WebSocket.CLOSED) return 'disconnected'
+  const getConnectionStatus = (): 'connecting' | 'connected' | 'disconnected' | 'error' => {
+    if (isConnecting) return 'connecting'
+    if (ws?.readyState === WebSocket.OPEN) return 'connected'
+    if (ws?.readyState === WebSocket.CLOSED) return 'disconnected'
     return 'error'
   }
 
   /**
    * Check if connected to a specific note
    */
-  isConnectedToNote(noteId: string): boolean {
-    return this.ws?.readyState === WebSocket.OPEN && this.noteId === noteId
+  const isConnectedToNote = (checkNoteId: string): boolean => {
+    return ws?.readyState === WebSocket.OPEN && noteId === checkNoteId
   }
 
-  private async waitForConnection(): Promise<void> {
+  const waitForConnection = async (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if (!this.ws) {
+      if (!ws) {
         reject(new Error('WebSocket not initialized'))
         return
       }
@@ -176,100 +256,120 @@ class WebSocketService {
 
       const onOpen = () => {
         clearTimeout(timeout)
-        this.ws?.removeEventListener('open', onOpen)
-        this.ws?.removeEventListener('error', onError)
-        this.isConnecting = false
+        ws?.removeEventListener('open', onOpen)
+        ws?.removeEventListener('error', onError)
+        isConnecting = false
         resolve()
       }
 
       const onError = (error: Event) => {
         clearTimeout(timeout)
-        this.ws?.removeEventListener('open', onOpen)
-        this.ws?.removeEventListener('error', onError)
-        this.isConnecting = false
+        ws?.removeEventListener('open', onOpen)
+        ws?.removeEventListener('error', onError)
+        isConnecting = false
         reject(error)
       }
 
-      this.ws.addEventListener('open', onOpen)
-      this.ws.addEventListener('error', onError)
+      ws.addEventListener('open', onOpen)
+      ws.addEventListener('error', onError)
     })
   }
 
-  private handleOpen(): void {
-    console.log('WebSocket connected')
-    this.reconnectAttempts = 0
-    this.joinNote()
+  const handleOpen = (): void => {
+    console.log('WebSocket connected successfully')
+    reconnectAttempts = 0
+    joinNote()
   }
 
-  private handleMessage(event: MessageEvent): void {
+  const handleMessage = (event: MessageEvent): void => {
     try {
       const data = JSON.parse(event.data)
-      this.handleEvent(data)
+      handleEvent(data)
     } catch (error) {
       console.error('Failed to parse WebSocket message:', error)
     }
   }
 
-  private handleClose(event: CloseEvent): void {
+  const handleClose = (event: CloseEvent): void => {
     console.log('WebSocket disconnected:', event.code, event.reason)
-    this.isConnecting = false
+    isConnecting = false
 
     // Attempt to reconnect if it wasn't a manual disconnect
-    if (event.code !== 1000 && this.noteId && this.token) {
-      this.attemptReconnect()
+    if (event.code !== 1000 && noteId && token) {
+      console.log('Attempting to reconnect...')
+      attemptReconnect()
     }
   }
 
-  private handleError(error: Event): void {
+  const handleError = (error: Event): void => {
     console.error('WebSocket error:', error)
-    this.isConnecting = false
+    isConnecting = false
   }
 
-  private attemptReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+  const attemptReconnect = (): void => {
+    if (reconnectAttempts >= maxReconnectAttempts) {
       console.error('Max reconnection attempts reached')
       return
     }
 
-    this.reconnectAttempts++
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
+    reconnectAttempts++
+    console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})`)
 
-    this.reconnectTimeout = setTimeout(() => {
-      if (this.noteId && this.token) {
-        this.connect(this.noteId, this.token).catch(console.error)
+    reconnectTimeout = setTimeout(() => {
+      if (noteId && token) {
+        connect(noteId, token).catch(console.error)
       }
     }, WS_CONFIG.RECONNECT_INTERVAL)
   }
 
-  private handleEvent(data: any): void {
-    const { type } = data
+  const handleEvent = (data: unknown): void => {
+    if (typeof data !== 'object' || data === null) {
+      console.warn('Invalid WebSocket message format')
+      return
+    }
+
+    const message = data as Record<string, unknown>
+    const { type } = message
 
     switch (type) {
       case 'connected':
-        this.eventHandlers.connected?.(data as WSConnected)
+        eventHandlers.connected?.(message as unknown as WSConnected)
         break
       case 'joined':
-        this.eventHandlers.joined?.(data as WSJoined)
+        eventHandlers.joined?.(message as unknown as WSJoined)
         break
       case 'note_updated':
-        this.eventHandlers.note_updated?.(data as WSNoteUpdated)
+        eventHandlers.note_updated?.(message as unknown as WSNoteUpdated)
         break
       case 'user_joined':
-        this.eventHandlers.user_joined?.(data as WSUserJoined)
+        eventHandlers.user_joined?.(message as unknown as WSUserJoined)
         break
       case 'user_left':
-        this.eventHandlers.user_left?.(data as WSUserLeft)
+        eventHandlers.user_left?.(message as unknown as WSUserLeft)
         break
       case 'cursor_position':
-        this.eventHandlers.cursor_position?.(data as WSCursorPosition)
+        eventHandlers.cursor_position?.(message as unknown as WSCursorPosition)
         break
       case 'error':
-        this.eventHandlers.error?.(data as WSError)
+        eventHandlers.error?.(message as unknown as WSError)
         break
       default:
         console.warn('Unknown WebSocket event type:', type)
     }
   }
+
+  return {
+    connect,
+    disconnect,
+    send,
+    joinNote,
+    editNote,
+    updateCursorPosition,
+    on,
+    off,
+    getConnectionStatus,
+    isConnectedToNote
+  }
 }
 
-export default new WebSocketService()
+export default useWebSocketService

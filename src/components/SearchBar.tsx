@@ -18,6 +18,14 @@ export function SearchBar() {
     setSearchQuery('')
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLocalQuery(value)
+    
+    // Real-time search as user types
+    setSearchQuery(value)
+  }
+
   return (
     <form onSubmit={handleSearch} className="relative">
       <div className="relative">
@@ -28,7 +36,7 @@ export function SearchBar() {
           type="text"
           placeholder="Search notes..."
           value={localQuery}
-          onChange={(e) => setLocalQuery(e.target.value)}
+          onChange={handleInputChange}
           className="block w-full pl-10 pr-10 py-2 border border-input rounded-md leading-5 bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring sm:text-sm"
         />
         {localQuery && (

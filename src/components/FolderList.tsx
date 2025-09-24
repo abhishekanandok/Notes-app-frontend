@@ -2,16 +2,20 @@
 
 import { useState } from 'react'
 import { useNotes } from '@/contexts/NotesContext'
-import { ChevronDown, ChevronRight, Folder, Plus, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronDown, ChevronRight, Folder, Plus, X, FileText, MoreVertical, Edit, Trash2, Move } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function FolderList() {
-  const { folders, createFolder } = useNotes()
+  const { folders, createFolder, updateFolder, deleteFolder, notes, updateNote } = useNotes()
+  const router = useRouter()
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [folderName, setFolderName] = useState('')
   const [folderDescription, setFolderDescription] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [showNoteActions, setShowNoteActions] = useState<string | null>(null)
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders)
@@ -48,6 +52,30 @@ export function FolderList() {
     setShowCreateModal(false)
     setFolderName('')
     setFolderDescription('')
+  }
+
+  const openNote = (noteId: string) => {
+    router.push(`/dashboard/notes/${noteId}`)
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (confirm('Are you sure you want to delete this note?')) {
+      try {
+        // Note: deleteNote function should be available from useNotes
+        // await deleteNote(noteId)
+        console.log('Delete note:', noteId)
+      } catch (error) {
+        console.error('Failed to delete note:', error)
+      }
+    }
+  }
+
+  const handleMoveNote = async (noteId: string, folderId: string | null) => {
+    try {
+      await updateNote(noteId, { folderId })
+    } catch (error) {
+      console.error('Failed to move note:', error)
+    }
   }
 
   return (
@@ -89,14 +117,65 @@ export function FolderList() {
             
             {expandedFolders.has(folder.id) && (
               <div className="ml-6 mt-1 space-y-1">
-                {folder.notes?.map((note) => (
-                  <button
+                {notes.filter(note => note.folder?.id === folder.id).map((note) => (
+                  <div
                     key={note.id}
-                    className="w-full text-left px-3 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                    className="group flex items-center justify-between px-3 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                   >
-                    {note.title}
-                  </button>
-                )) || (
+                    <button
+                      onClick={() => openNote(note.id)}
+                      className="flex items-center space-x-2 flex-1 text-left"
+                    >
+                      <FileText className="h-3 w-3" />
+                      <span className="truncate">{note.title}</span>
+                    </button>
+                    <div className="relative">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setShowNoteActions(showNoteActions === note.id ? null : note.id)}
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                      {showNoteActions === note.id && (
+                        <div className="absolute right-0 top-6 bg-card border border-border rounded-md shadow-lg z-10 min-w-[120px]">
+                          <button
+                            onClick={() => {
+                              openNote(note.id)
+                              setShowNoteActions(null)
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center space-x-2"
+                          >
+                            <Edit className="h-3 w-3" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleMoveNote(note.id, null)
+                              setShowNoteActions(null)
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center space-x-2"
+                          >
+                            <Move className="h-3 w-3" />
+                            <span>Move Out</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleDeleteNote(note.id)
+                              setShowNoteActions(null)
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent text-destructive flex items-center space-x-2"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {notes.filter(note => note.folder?.id === folder.id).length === 0 && (
                   <div className="px-3 py-1 text-sm text-muted-foreground">
                     No notes in this folder
                   </div>

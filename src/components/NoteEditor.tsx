@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNotes } from '@/contexts/NotesContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { websocketService, notesService } from '@/services'
+import useWebSocketService from '@/services/websocketService'
+import useNotesService from '@/services/notesService'
 
 interface NoteEditorProps {
   noteId: string

@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
 import { DashboardSidebar } from '@/components/DashboardSidebar'
 import { DashboardBottomNav } from '@/components/DashboardBottomNav'
-import { FolderList } from '@/components/FolderList'
 import { SearchBar } from '@/components/SearchBar'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
@@ -53,7 +52,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background max-w-7xl mx-auto">
       {/* Navbar */}
       <Navbar />
       
@@ -103,6 +102,11 @@ export default function DashboardLayout({
               </Button>
               <h1 className="text-lg font-semibold">NotesApp</h1>
               <div className="w-10" /> {/* Spacer for centering */}
+            </div>
+
+            {/* Search Bar */}
+            <div className="p-4 border-b border-border bg-card">
+              <SearchBar />
             </div>
 
             {/* Content */}

@@ -3,16 +3,18 @@
 import { useState } from 'react'
 import { useNotes } from '@/contexts/NotesContext'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, X } from 'lucide-react'
+import { FileText, Plus, X, MoreVertical, Edit, Trash2, Move } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function NoteList() {
-  const { filteredNotes, searchQuery, createNote, folders } = useNotes()
+  const { filteredNotes, searchQuery, createNote, folders, updateNote, deleteNote } = useNotes()
   const router = useRouter()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
   const [selectedFolderId, setSelectedFolderId] = useState<string>('')
   const [isCreating, setIsCreating] = useState(false)
+  const [showNoteActions, setShowNoteActions] = useState<string | null>(null)
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +52,27 @@ export function NoteList() {
   }
 
   const openNote = (noteId: string) => {
-    router.push(`/notes/${noteId}`)
+    router.push(`/dashboard/notes/${noteId}`)
+  }
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (confirm('Are you sure you want to delete this note?')) {
+      try {
+        await deleteNote(noteId)
+        setShowNoteActions(null)
+      } catch (error) {
+        console.error('Failed to delete note:', error)
+      }
+    }
+  }
+
+  const handleMoveNote = async (noteId: string, folderId: string | null) => {
+    try {
+      await updateNote(noteId, { folderId })
+      setShowNoteActions(null)
+    } catch (error) {
+      console.error('Failed to move note:', error)
+    }
   }
 
   if (searchQuery) {
@@ -71,21 +93,77 @@ export function NoteList() {
             {filteredNotes.map((note) => (
               <div
                 key={note.id}
-                onClick={() => openNote(note.id)}
-                className="p-4 border border-border rounded-lg bg-card hover:shadow-md transition-shadow cursor-pointer"
+                className="p-4 border border-border rounded-lg bg-card hover:shadow-md transition-shadow group"
               >
                 <div className="flex items-start space-x-3">
                   <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-foreground truncate">
+                    <h3 
+                      className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => openNote(note.id)}
+                    >
                       {note.title}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {note.content}
+                      {note.content || 'No content'}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(note.updatedAt).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(note.updatedAt).toLocaleDateString()}
+                      </p>
+                      {note.folder && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                          {note.folder.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowNoteActions(showNoteActions === note.id ? null : note.id)
+                      }}
+                    >
+                      <MoreVertical className="h-3 w-3" />
+                    </Button>
+                    {showNoteActions === note.id && (
+                      <div className="absolute right-0 top-6 bg-card border border-border rounded-md shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            openNote(note.id)
+                            setShowNoteActions(null)
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center space-x-2"
+                        >
+                          <Edit className="h-3 w-3" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleMoveNote(note.id, null)
+                            setShowNoteActions(null)
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center space-x-2"
+                        >
+                          <Move className="h-3 w-3" />
+                          <span>Move Out</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDeleteNote(note.id)
+                            setShowNoteActions(null)
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-accent text-destructive flex items-center space-x-2"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -100,7 +178,7 @@ export function NoteList() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-foreground">
-          Recent Notes
+          {searchQuery ? `Search Results (${filteredNotes.length})` : `Recent Notes (${filteredNotes.length})`}
         </h2>
         <button
           onClick={openCreateModal}
@@ -111,10 +189,44 @@ export function NoteList() {
         </button>
       </div>
       
-      <div className="text-center py-8 text-muted-foreground">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-        <p>No notes yet. Create your first note to get started!</p>
-      </div>
+      {filteredNotes.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+          <p>{searchQuery ? `No notes found matching "${searchQuery}"` : 'No notes yet. Create your first note to get started!'}</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredNotes.map((note) => (
+            <div
+              key={note.id}
+              onClick={() => openNote(note.id)}
+              className="p-4 border border-border rounded-lg bg-card hover:shadow-md transition-shadow cursor-pointer group"
+            >
+              <div className="flex items-start space-x-3">
+                <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                    {note.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {note.content || 'No content'}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(note.updatedAt).toLocaleDateString()}
+                    </p>
+                    {note.folder && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {note.folder.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Create Note Modal */}
       {showCreateModal && (

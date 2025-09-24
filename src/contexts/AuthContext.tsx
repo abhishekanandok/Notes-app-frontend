@@ -1,8 +1,9 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { authService, User } from '@/services'
+import useAuthService from '@/services/authService'
+import type { User } from '@/services/authService'
 
 // User interface is now imported from services
 
@@ -22,8 +23,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const authService = useAuthService()
+  const hasInitialized = useRef(false)
+
+  const verifyToken = useCallback(async () => {
+    try {
+      console.log('Verifying token...')
+      const result = await authService.getCurrentUser()
+      console.log('Verify token result:', result)
+      
+      if (result.success) {
+        // Check if user data exists in result.user (direct) or result.data.user (nested)
+        const userData = (result as unknown as { user?: User }).user || (result.data as unknown as { user?: User })?.user
+        
+        if (userData) {
+          console.log('Token verification successful:', userData)
+          setUser(userData)
+          
+          // Update localStorage with fresh user data
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(userData))
+            console.log('User data updated in localStorage:', userData)
+          }
+        } else {
+          throw new Error('No user data received')
+        }
+      } else {
+        throw new Error(result.error || 'Token verification failed')
+      }
+    } catch (error) {
+      console.error('Token verification failed:', error)
+      authService.logout()
+      setToken(null)
+      setUser(null)
+      
+      // Remove user data from localStorage on verification failure
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user')
+        console.log('User data removed from localStorage due to verification failure')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [authService])
 
   useEffect(() => {
+    // Only run initialization once
+    if (hasInitialized.current) return
+    hasInitialized.current = true
+
     const storedToken = authService.getStoredToken()
     console.log('Initial token check:', storedToken)
     
@@ -49,51 +97,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const verifyToken = async () => {
-    try {
-      console.log('Verifying token...')
-      const userData = await authService.getCurrentUser()
-      console.log('Token verification successful:', userData)
-      setUser(userData)
-      
-      // Update localStorage with fresh user data
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(userData))
-        console.log('User data updated in localStorage:', userData)
-      }
-    } catch (error) {
-      console.error('Token verification failed:', error)
-      authService.logout()
-      setToken(null)
-      setUser(null)
-      
-      // Remove user data from localStorage on verification failure
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user')
-        console.log('User data removed from localStorage due to verification failure')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const login = async (email: string, password: string) => {
     try {
-      const { token: newToken, user: userData } = await authService.login({ email, password })
-      console.log('AuthContext received:', { newToken, userData })
-      setToken(newToken)
-      setUser(userData)
+      const result = await authService.login({ email, password })
+      console.log('AuthContext received result:', result)
       
-      // Save user data to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(userData))
-        console.log('User data saved to localStorage:', userData)
+      if (result.success) {
+        // Token is already stored by authService, get it from there
+        const token = authService.getStoredToken()
+        
+        // Check if user data exists in result.user (direct) or result.data.user (nested)
+        const userData = (result as unknown as { user?: User }).user || (result.data as unknown as { user?: User })?.user
+        
+        if (userData) {
+          console.log('AuthContext received user data:', userData)
+          setToken(token)
+          setUser(userData)
+          
+          // Save user data to localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(userData))
+            console.log('User data saved to localStorage:', userData)
+          }
+          
+          console.log('AuthContext state updated, redirecting to dashboard')
+          router.push('/dashboard')
+        } else {
+          throw new Error('No user data received')
+        }
+      } else {
+        throw new Error(result.error || 'Login failed')
       }
-      
-      console.log('AuthContext state updated, redirecting to dashboard')
-      router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
       throw error
@@ -102,17 +139,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (username: string, email: string, password: string) => {
     try {
-      const { token: newToken, user: userData } = await authService.register({ username, email, password })
-      setToken(newToken)
-      setUser(userData)
+      const result = await authService.register({ username, email, password })
+      console.log('AuthContext received signup result:', result)
       
-      // Save user data to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(userData))
-        console.log('User data saved to localStorage:', userData)
+      if (result.success) {
+        // Token is already stored by authService, get it from there
+        const token = authService.getStoredToken()
+        
+        // Check if user data exists in result.user (direct) or result.data.user (nested)
+        const userData = (result as unknown as { user?: User }).user || (result.data as unknown as { user?: User })?.user
+        
+        if (userData) {
+          setToken(token)
+          setUser(userData)
+          
+          // Save user data to localStorage
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(userData))
+            console.log('User data saved to localStorage:', userData)
+          }
+          
+          router.push('/dashboard')
+        } else {
+          throw new Error('No user data received')
+        }
+      } else {
+        throw new Error(result.error || 'Registration failed')
       }
-      
-      router.push('/dashboard')
     } catch (error) {
       console.error('Signup error:', error)
       throw error

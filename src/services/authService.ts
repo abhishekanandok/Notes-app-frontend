@@ -1,6 +1,11 @@
 
-import BaseService from './base'
-import { API_CONFIG, ApiResponse, User } from './config'
+// Types
+export interface User {
+  id: string
+  email: string
+  username: string
+  createdAt: string
+}
 
 export interface RegisterData {
   email: string
@@ -18,77 +23,151 @@ export interface AuthResponse {
   user: User
 }
 
-class AuthService extends BaseService {
+interface ApiResponse<T = unknown> {
+  success: boolean
+  data?: T
+  error?: string
+  count?: number
+  token?: string
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+
+const useAuthService = () => {
+  const getAuthHeaders = () => {
+    const token = getToken()
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    }
+  }
+
+  const handleApiResponse = async <T>(response: Response, endpoint: string): Promise<ApiResponse<T>> => {
+    const data = await response.json()
+    
+    console.log(`API Response [${endpoint}]:`, data)
+    
+    if (!response.ok) {
+      throw new Error(data.error || data.message || 'An error occurred')
+    }
+    
+    return data
+  }
+
+  const getToken = (): string | null => {
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';')
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='))
+      return tokenCookie ? tokenCookie.split('=')[1] : null
+    }
+    return null
+  }
+
+  const setToken = (token: string): void => {
+    if (typeof document !== 'undefined') {
+      // Set cookie with 7 days expiration
+      const expirationDate = new Date()
+      expirationDate.setDate(expirationDate.getDate() + 7)
+      
+      // Use secure flag only in production
+      const isProduction = process.env.NODE_ENV === 'production'
+      const secureFlag = isProduction ? '; secure' : ''
+      
+      document.cookie = `token=${token}; expires=${expirationDate.toUTCString()}; path=/; samesite=strict${secureFlag}`
+      console.log('Token saved to cookies:', token)
+    } else {
+      console.log('Document is undefined, cannot save token')
+    }
+  }
+
+  const removeToken = (): void => {
+    if (typeof document !== 'undefined') {
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    }
+  }
+
+  const getStoredToken = (): string | null => {
+    return getToken()
+  }
   /**
    * Register a new user
    */
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await this.post<AuthResponse>(
-      API_CONFIG.ENDPOINTS.AUTH.REGISTER,
-      data
-    )
-
-    // The response is the direct API response: { success: true, token: "...", user: {...} }
-    if (response.success && response.token && response.user) {
-      // Store token automatically
-      this.setToken(response.token)
-      return {
-        token: response.token,
-        user: response.user
+  const register = async (data: RegisterData): Promise<ApiResponse<AuthResponse>> => {
+    try {
+      console.log('API Call: Registering user', data)
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      })
+      
+      const result = await handleApiResponse<AuthResponse>(response, 'register')
+      
+      // Store token automatically if registration successful
+      if (result.success && result.token) {
+        setToken(result.token)
       }
+      
+      return result
+    } catch (error: unknown) {
+      console.error('API Error [register]:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
     }
-
-    throw new Error(response.error || 'Registration failed')
   }
 
   /**
    * Login user
    */
-  async login(data: LoginData): Promise<AuthResponse> {
-    const response = await this.post<AuthResponse>(
-      API_CONFIG.ENDPOINTS.AUTH.LOGIN,
-      data
-    )
-    console.log('Login response:', response)
-
-    // The response is the direct API response: { success: true, token: "...", user: {...} }
-    if (response.success && response.token && response.user) {
-      // Store token automatically
-      this.setToken(response.token)
-      console.log('Token stored:', response.token)
-      return {
-        token: response.token,
-        user: response.user
+  const login = async (data: LoginData): Promise<ApiResponse<AuthResponse>> => {
+    try {
+      console.log('API Call: Logging in user', data)
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      })
+      
+      const result = await handleApiResponse<AuthResponse>(response, 'login')
+      
+      // Store token automatically if login successful
+      if (result.success && result.token) {
+        setToken(result.token)
+        console.log('Token stored:', result.token)
       }
+      
+      return result
+    } catch (error: unknown) {
+      console.error('API Error [login]:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
     }
-
-    throw new Error(response.error || 'Login failed')
   }
 
   /**
    * Get current user information
    */
-  async getCurrentUser(): Promise<User> {
-    const response = await this.get<{ user: User }>(
-      API_CONFIG.ENDPOINTS.AUTH.ME
-    )
-
-    // The response is the direct API response: { success: true, user: {...} }
-    if (response.success && response.user) {
-      return response.user
+  const getCurrentUser = async (): Promise<ApiResponse<User>> => {
+    try {
+      console.log('API Call: Getting current user')
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      })
+      
+      return handleApiResponse<User>(response, 'getCurrentUser')
+    } catch (error: unknown) {
+      console.error('API Error [getCurrentUser]:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
     }
-
-    throw new Error(response.error || 'Failed to get user information')
   }
 
   /**
    * Verify if token is valid
    */
-  async verifyToken(): Promise<boolean> {
+  const verifyToken = async (): Promise<boolean> => {
     try {
-      await this.getCurrentUser()
-      return true
-    } catch (error) {
+      const result = await getCurrentUser()
+      return result.success
+    } catch {
       return false
     }
   }
@@ -96,16 +175,29 @@ class AuthService extends BaseService {
   /**
    * Logout user (remove token)
    */
-  logout(): void {
-    this.removeToken()
+  const logout = (): void => {
+    removeToken()
   }
 
   /**
    * Check if user is authenticated
    */
-  isAuthenticated(): boolean {
-    return !!this.getStoredToken()
+  const isAuthenticated = (): boolean => {
+    return !!getStoredToken()
+  }
+
+  return {
+    register,
+    login,
+    getCurrentUser,
+    verifyToken,
+    logout,
+    isAuthenticated,
+    getToken,
+    setToken,
+    removeToken,
+    getStoredToken
   }
 }
 
-export default new AuthService()
+export default useAuthService
