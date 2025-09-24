@@ -25,6 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedToken = authService.getStoredToken()
+    console.log('Initial token check:', storedToken)
+    
+    // Load user data from localStorage if available
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user')
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser)
+          setUser(userData)
+          console.log('User data loaded from localStorage:', userData)
+        } catch (error) {
+          console.error('Failed to parse stored user data:', error)
+          localStorage.removeItem('user')
+        }
+      }
+    }
+    
     if (storedToken) {
       setToken(storedToken)
       // Verify token with backend
@@ -36,13 +53,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyToken = async () => {
     try {
+      console.log('Verifying token...')
       const userData = await authService.getCurrentUser()
+      console.log('Token verification successful:', userData)
       setUser(userData)
+      
+      // Update localStorage with fresh user data
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(userData))
+        console.log('User data updated in localStorage:', userData)
+      }
     } catch (error) {
       console.error('Token verification failed:', error)
       authService.logout()
       setToken(null)
       setUser(null)
+      
+      // Remove user data from localStorage on verification failure
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user')
+        console.log('User data removed from localStorage due to verification failure')
+      }
     } finally {
       setLoading(false)
     }
@@ -51,8 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const { token: newToken, user: userData } = await authService.login({ email, password })
+      console.log('AuthContext received:', { newToken, userData })
       setToken(newToken)
       setUser(userData)
+      
+      // Save user data to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(userData))
+        console.log('User data saved to localStorage:', userData)
+      }
+      
+      console.log('AuthContext state updated, redirecting to dashboard')
       router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
@@ -65,6 +105,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { token: newToken, user: userData } = await authService.register({ username, email, password })
       setToken(newToken)
       setUser(userData)
+      
+      // Save user data to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(userData))
+        console.log('User data saved to localStorage:', userData)
+      }
+      
       router.push('/dashboard')
     } catch (error) {
       console.error('Signup error:', error)
@@ -76,6 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.logout()
     setToken(null)
     setUser(null)
+    
+    // Remove user data from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user')
+      console.log('User data removed from localStorage')
+    }
+    
     router.push('/login')
   }
 

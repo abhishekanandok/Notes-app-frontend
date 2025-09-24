@@ -25,8 +25,12 @@ class NotesService extends BaseService {
   async getAllNotes(): Promise<NotesResponse> {
     const response = await this.get<NotesResponse>(API_CONFIG.ENDPOINTS.NOTES)
 
+    // The response is the direct API response: { success: true, count: number, data: [...] }
     if (response.success && response.data) {
-      return response.data
+      return {
+        count: response.count || response.data.length,
+        data: response.data
+      }
     }
 
     throw new Error(response.error || 'Failed to fetch notes')
@@ -38,8 +42,9 @@ class NotesService extends BaseService {
   async getNoteById(id: string): Promise<Note> {
     const response = await this.get<{ data: Note }>(`${API_CONFIG.ENDPOINTS.NOTES}/${id}`)
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to fetch note')
@@ -54,8 +59,9 @@ class NotesService extends BaseService {
       data
     )
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to create note')
@@ -70,8 +76,9 @@ class NotesService extends BaseService {
       data
     )
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to update note')

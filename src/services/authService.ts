@@ -1,3 +1,4 @@
+
 import BaseService from './base'
 import { API_CONFIG, ApiResponse, User } from './config'
 
@@ -27,10 +28,14 @@ class AuthService extends BaseService {
       data
     )
 
-    if (response.success && response.data) {
+    // The response is the direct API response: { success: true, token: "...", user: {...} }
+    if (response.success && response.token && response.user) {
       // Store token automatically
-      this.setToken(response.data.token)
-      return response.data
+      this.setToken(response.token)
+      return {
+        token: response.token,
+        user: response.user
+      }
     }
 
     throw new Error(response.error || 'Registration failed')
@@ -44,11 +49,17 @@ class AuthService extends BaseService {
       API_CONFIG.ENDPOINTS.AUTH.LOGIN,
       data
     )
+    console.log('Login response:', response)
 
-    if (response.success && response.data) {
+    // The response is the direct API response: { success: true, token: "...", user: {...} }
+    if (response.success && response.token && response.user) {
       // Store token automatically
-      this.setToken(response.data.token)
-      return response.data
+      this.setToken(response.token)
+      console.log('Token stored:', response.token)
+      return {
+        token: response.token,
+        user: response.user
+      }
     }
 
     throw new Error(response.error || 'Login failed')
@@ -62,8 +73,9 @@ class AuthService extends BaseService {
       API_CONFIG.ENDPOINTS.AUTH.ME
     )
 
-    if (response.success && response.data) {
-      return response.data.user
+    // The response is the direct API response: { success: true, user: {...} }
+    if (response.success && response.user) {
+      return response.user
     }
 
     throw new Error(response.error || 'Failed to get user information')

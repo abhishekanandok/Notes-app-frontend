@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react'
 import { notesService, foldersService, Note, Folder } from '@/services'
 
 // Note and Folder interfaces are now imported from services
@@ -35,7 +35,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const fetchFolders = async () => {
+  const fetchFolders = useCallback(async () => {
     setLoading(true)
     try {
       const response = await foldersService.getAllFolders()
@@ -45,9 +45,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     setLoading(true)
     try {
       const response = await notesService.getAllNotes()
@@ -57,9 +57,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const createNote = async (title: string, content: string, folderId?: string): Promise<Note> => {
+  const createNote = useCallback(async (title: string, content: string, folderId?: string): Promise<Note> => {
     try {
       const note = await notesService.createNote({ title, content, folderId: folderId || null })
       setNotes(prev => [note, ...prev])
@@ -68,9 +68,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to create note:', error)
       throw error
     }
-  }
+  }, [])
 
-  const updateNote = async (id: string, data: { title?: string; content?: string; folderId?: string }): Promise<Note> => {
+  const updateNote = useCallback(async (id: string, data: { title?: string; content?: string; folderId?: string }): Promise<Note> => {
     try {
       const updatedNote = await notesService.updateNote(id, data)
       setNotes(prev => prev.map(note => note.id === id ? updatedNote : note))
@@ -84,9 +84,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to update note:', error)
       throw error
     }
-  }
+  }, [activeNote])
 
-  const deleteNote = async (id: string): Promise<void> => {
+  const deleteNote = useCallback(async (id: string): Promise<void> => {
     try {
       await notesService.deleteNote(id)
       setNotes(prev => prev.filter(note => note.id !== id))
@@ -98,9 +98,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to delete note:', error)
       throw error
     }
-  }
+  }, [activeNote])
 
-  const createFolder = async (name: string, description?: string): Promise<Folder> => {
+  const createFolder = useCallback(async (name: string, description?: string): Promise<Folder> => {
     try {
       const folder = await foldersService.createFolder({ name, description })
       setFolders(prev => [folder, ...prev])
@@ -109,9 +109,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to create folder:', error)
       throw error
     }
-  }
+  }, [])
 
-  const updateFolder = async (id: string, data: { name?: string; description?: string }): Promise<Folder> => {
+  const updateFolder = useCallback(async (id: string, data: { name?: string; description?: string }): Promise<Folder> => {
     try {
       const updatedFolder = await foldersService.updateFolder(id, data)
       setFolders(prev => prev.map(folder => folder.id === id ? updatedFolder : folder))
@@ -120,9 +120,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to update folder:', error)
       throw error
     }
-  }
+  }, [])
 
-  const deleteFolder = async (id: string): Promise<void> => {
+  const deleteFolder = useCallback(async (id: string): Promise<void> => {
     try {
       await foldersService.deleteFolder(id)
       setFolders(prev => prev.filter(folder => folder.id !== id))
@@ -130,9 +130,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       console.error('Failed to delete folder:', error)
       throw error
     }
-  }
+  }, [])
 
-  const updateNoteContent = (noteId: string, content: string) => {
+  const updateNoteContent = useCallback((noteId: string, content: string) => {
     setNotes(prev => prev.map(note => 
       note.id === noteId ? { ...note, content } : note
     ))
@@ -140,7 +140,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     if (activeNote?.id === noteId) {
       setActiveNote(prev => prev ? { ...prev, content } : null)
     }
-  }
+  }, [activeNote])
 
   const filteredNotes = searchQuery 
     ? notes.filter(note => 

@@ -25,7 +25,7 @@ export default function DashboardPage() {
       fetchFolders()
       fetchNotes()
     }
-  }, [token, fetchFolders, fetchNotes])
+  }, [token, fetchFolders, fetchNotes]) // Now safe to include since they're memoized
 
   if (authLoading) {
     return (
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-2xl font-bold text-foreground mb-6">
-              Welcome back, {user.name}
+              Welcome back, {user.username}
             </h1>
             <NoteList />
           </div>

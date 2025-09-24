@@ -23,8 +23,12 @@ class FoldersService extends BaseService {
   async getAllFolders(): Promise<FoldersResponse> {
     const response = await this.get<FoldersResponse>(API_CONFIG.ENDPOINTS.FOLDERS)
 
+    // The response is the direct API response: { success: true, count: number, data: [...] }
     if (response.success && response.data) {
-      return response.data
+      return {
+        count: response.count || response.data.length,
+        data: response.data
+      }
     }
 
     throw new Error(response.error || 'Failed to fetch folders')
@@ -36,8 +40,9 @@ class FoldersService extends BaseService {
   async getFolderById(id: string): Promise<Folder> {
     const response = await this.get<{ data: Folder }>(`${API_CONFIG.ENDPOINTS.FOLDERS}/${id}`)
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to fetch folder')
@@ -52,8 +57,9 @@ class FoldersService extends BaseService {
       data
     )
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to create folder')
@@ -68,8 +74,9 @@ class FoldersService extends BaseService {
       data
     )
 
+    // The response is the direct API response: { success: true, data: {...} }
     if (response.success && response.data) {
-      return response.data.data
+      return response.data
     }
 
     throw new Error(response.error || 'Failed to update folder')

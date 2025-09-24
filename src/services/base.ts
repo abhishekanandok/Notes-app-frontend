@@ -69,21 +69,34 @@ class BaseService {
   }
 
   private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token')
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';')
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='))
+      return tokenCookie ? tokenCookie.split('=')[1] : null
     }
     return null
   }
 
   public setToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', token)
+    if (typeof document !== 'undefined') {
+      // Set cookie with 7 days expiration
+      const expirationDate = new Date()
+      expirationDate.setDate(expirationDate.getDate() + 7)
+      
+      // Use secure flag only in production
+      const isProduction = process.env.NODE_ENV === 'production'
+      const secureFlag = isProduction ? '; secure' : ''
+      
+      document.cookie = `token=${token}; expires=${expirationDate.toUTCString()}; path=/; samesite=strict${secureFlag}`
+      console.log('Token saved to cookies:', token)
+    } else {
+      console.log('Document is undefined, cannot save token')
     }
   }
 
   public removeToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token')
+    if (typeof document !== 'undefined') {
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
     }
   }
 
