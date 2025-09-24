@@ -18,38 +18,208 @@ import {
   Lock,
   PenTool,
   Coffee,
-  Heart,
   BookOpen,
   Feather,
   Brain,
 } from "lucide-react"
 
-function FloatingNotebook() {
+function CollaborationSVG() {
   return (
-    <div className="relative w-56 h-72 sm:w-64 sm:h-80 md:w-72 md:h-88 lg:w-80 lg:h-96 mx-auto">
-      <div className="absolute inset-0 bg-gradient-to-br from-card via-card/80 to-card/60 rounded-2xl sm:rounded-3xl shadow-2xl transform rotate-3 sm:rotate-6 hover:rotate-2 sm:hover:rotate-3 transition-all duration-500 border border-border/30 animate-float backdrop-blur-sm">
-        <div className="p-4 sm:p-6">
-          <div className="flex items-center mb-4 sm:mb-6">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full mr-2 sm:mr-3 animate-pulse shadow-lg"></div>
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-500 rounded-full mr-2 sm:mr-3 animate-pulse delay-100 shadow-lg"></div>
-            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full animate-pulse delay-200 shadow-lg"></div>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            <div className="h-4 sm:h-5 bg-gradient-to-r from-primary/30 to-primary/20 rounded-lg animate-pulse shadow-sm"></div>
-            <div className="h-3 sm:h-4 bg-gradient-to-r from-muted-foreground/20 to-muted-foreground/30 rounded w-3/4 animate-pulse delay-100 shadow-sm"></div>
-            <div className="h-3 sm:h-4 bg-gradient-to-r from-muted-foreground/20 to-muted-foreground/30 rounded w-1/2 animate-pulse delay-200 shadow-sm"></div>
-            <div className="h-4 sm:h-5 bg-gradient-to-r from-primary/30 to-primary/20 rounded-lg w-5/6 animate-pulse delay-300 shadow-sm"></div>
-            <div className="h-3 sm:h-4 bg-gradient-to-r from-muted-foreground/20 to-muted-foreground/30 rounded w-2/3 animate-pulse delay-400 shadow-sm"></div>
-            <div className="h-3 sm:h-4 bg-gradient-to-r from-muted-foreground/20 to-muted-foreground/30 rounded w-4/5 animate-pulse delay-500 shadow-sm"></div>
-          </div>
-        </div>
-      </div>
-      <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 rounded-full flex items-center justify-center shadow-2xl animate-bounce border border-border/20">
-        <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-primary animate-pulse" />
-      </div>
-      <div className="absolute -bottom-3 -left-3 sm:-bottom-4 sm:-left-4 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 rounded-full flex items-center justify-center shadow-xl animate-bounce delay-1000 border border-border/20">
-        <Star className="h-6 w-6 sm:h-8 sm:w-8 text-primary animate-pulse" />
-      </div>
+    <div className="w-full h-full max-w-6xl mx-auto">
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="100%" 
+        height="100%" 
+        viewBox="0 0 1400 700" 
+        preserveAspectRatio="xMidYMid meet" 
+        role="img" 
+        aria-label="Three people collaborating on a paper"
+        className="animate-fade-in-up"
+      >
+        {/* Palette variables */}
+        <defs>
+          <linearGradient id="paperGrad" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#FFFDF6"/>
+            <stop offset="100%" stopColor="#FFF8E6"/>
+          </linearGradient>
+
+          <linearGradient id="goldGlow" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#FFD27A" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#D99B00" stopOpacity="0.95" />
+          </linearGradient>
+
+          <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="18" stdDeviation="24" floodColor="#C9A24B" floodOpacity="0.08"/>
+          </filter>
+
+          <filter id="tinyGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+
+          <symbol id="spark" viewBox="0 0 24 24">
+            <path d="M12 2l1.6 4.5L18 8l-4.4 1.5L12 14l-1.6-4.5L6 8l4.4-1.5L12 2z" fill="#FFE9B0" opacity="0.95"/>
+          </symbol>
+        </defs>
+
+        {/* Soft ambient glow behind composition */}
+        <ellipse cx="900" cy="230" rx="420" ry="200" fill="url(#goldGlow)" opacity="0.14">
+          <animate attributeName="opacity" values="0.14;0.24;0.14" dur="4s" repeatCount="indefinite" />
+          <animateTransform attributeName="transform" type="scale" values="1;1.05;1" dur="6s" repeatCount="indefinite" />
+        </ellipse>
+
+        {/* Floating paper */}
+        <g transform="translate(430,210)" filter="url(#softShadow)">
+          <rect x="0" y="0" rx="18" ry="18" width="540" height="340" fill="url(#paperGrad)" stroke="#F0E3B8" strokeWidth="1.5">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-5; 0,0" dur="3s" repeatCount="indefinite" />
+          </rect>
+          {/* subtle lines on paper */}
+          <g transform="translate(40,48)" fill="none" stroke="#E7D8B3" strokeLinecap="round" strokeWidth="6" opacity="0.85">
+            <path d="M0 12 h420">
+              <animate attributeName="stroke-dasharray" values="0,420;420,0;0,420" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M0 46 h360">
+              <animate attributeName="stroke-dasharray" values="0,360;360,0;0,360" dur="2.5s" repeatCount="indefinite" begin="0.5s" />
+            </path>
+            <path d="M0 80 h420">
+              <animate attributeName="stroke-dasharray" values="0,420;420,0;0,420" dur="2.2s" repeatCount="indefinite" begin="1s" />
+            </path>
+            <path d="M0 114 h300">
+              <animate attributeName="stroke-dasharray" values="0,300;300,0;0,300" dur="2.8s" repeatCount="indefinite" begin="1.5s" />
+            </path>
+          </g>
+          {/* top-left fold */}
+          <path d="M12 12 q8 -8 24 -10" fill="none" stroke="#F3E7C6" strokeWidth="1.5" opacity="0.8"/>
+        </g>
+
+        {/* Table shadow below paper */}
+        <ellipse cx="700" cy="570" rx="360" ry="36" fill="#000" opacity="0.05" />
+
+        {/* Left person (female-ish) */}
+        <g transform="translate(300,330)">
+          {/* body cloak */}
+          <path d="M0 90 q30 -80 90 -78 q60 2 90 78 q-90 25 -180 0z" fill="#FFEDC6" opacity="0.95">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-2; 0,0" dur="4s" repeatCount="indefinite" />
+          </path>
+          {/* sleeve and arm */}
+          <path d="M40 82 q30 14 72 -2" fill="none" stroke="#D9B86A" strokeWidth="6" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 76 78; 2 76 78; 0 76 78" dur="3s" repeatCount="indefinite" />
+          </path>
+          {/* head */}
+          <circle cx="28" cy="34" r="26" fill="#FFF6E8" stroke="#E9D6AD" strokeWidth="1.5">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-1; 0,0" dur="5s" repeatCount="indefinite" />
+          </circle>
+          {/* hair */}
+          <path d="M2 36 q12 -32 48 -28 q-6 20 -36 42 z" fill="#F5D89B"/>
+          {/* glasses */}
+          <g transform="translate(10,24)">
+            <circle cx="10" cy="6" r="6" fill="none" stroke="#A36B00" strokeWidth="2"/>
+            <circle cx="30" cy="6" r="6" fill="none" stroke="#A36B00" strokeWidth="2"/>
+            <path d="M16 6 h14" stroke="#A36B00" strokeWidth="1.5" strokeLinecap="round"/>
+          </g>
+          {/* hand with quill */}
+          <path d="M72 86 q18 -12 30 -10" fill="none" stroke="#C68E12" strokeWidth="6" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 87 81; 3 87 81; 0 87 81" dur="2.5s" repeatCount="indefinite" />
+          </path>
+          <path d="M100 75 l16 -10" stroke="#7A4B00" strokeWidth="3" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 108 70; 2 108 70; 0 108 70" dur="2.5s" repeatCount="indefinite" />
+          </path>
+        </g>
+
+        {/* Center person (round glasses, slightly wizardly) */}
+        <g transform="translate(560,220)">
+          {/* cloak */}
+          <path d="M60 140 q40 -140 200 -10 q-120 30 -260 0z" fill="#FFE9B8" opacity="0.98">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-3; 0,0" dur="4.5s" repeatCount="indefinite" />
+          </path>
+          {/* torso */}
+          <path d="M84 64 q36 -40 120 -4" fill="none" stroke="#D9B86A" strokeWidth="2" />
+          {/* head */}
+          <circle cx="140" cy="44" r="30" fill="#FFF6E8" stroke="#E9D6AD" strokeWidth="1.5">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-2; 0,0" dur="5.5s" repeatCount="indefinite" />
+          </circle>
+          {/* hair (stylized tuft) */}
+          <path d="M130 26 q10 -18 26 -12 q-8 10 -28 16z" fill="#F5D89B" />
+          {/* glasses */}
+          <g transform="translate(124,34)">
+            <circle cx="10" cy="8" r="6" fill="none" stroke="#A36B00" strokeWidth="2" />
+            <circle cx="28" cy="8" r="6" fill="none" stroke="#A36B00" strokeWidth="2" />
+            <path d="M16 8 h10" stroke="#A36B00" strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+          {/* hands */}
+          <path d="M110 86 q22 -10 46 -6" fill="none" stroke="#C68E12" strokeWidth="6" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 133 83; 2 133 83; 0 133 83" dur="3.5s" repeatCount="indefinite" />
+          </path>
+          <path d="M150 86 q-6 -10 20 -10" fill="none" stroke="#C68E12" strokeWidth="6" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 160 83; -2 160 83; 0 160 83" dur="3.5s" repeatCount="indefinite" />
+          </path>
+          {/* small star wand hint */}
+          <path d="M196 60 l14 -6" stroke="#D99B00" strokeWidth="3" strokeLinecap="round" opacity="0.9">
+            <animateTransform attributeName="transform" type="rotate" values="0 203 57; 5 203 57; 0 203 57" dur="2s" repeatCount="indefinite" />
+          </path>
+        </g>
+
+        {/* Right person (male-ish) */}
+        <g transform="translate(840,330)">
+          {/* body cloak */}
+          <path d="M120 90 q-30 -78 -90 -80 q-60 -2 -90 80 q90 18 180 0z" fill="#FFF0D4" opacity="0.97">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-2; 0,0" dur="4.2s" repeatCount="indefinite" />
+          </path>
+          {/* head */}
+          <circle cx="56" cy="34" r="26" fill="#FFF6E8" stroke="#E9D6AD" strokeWidth="1.5">
+            <animateTransform attributeName="transform" type="translate" values="0,0; 0,-1; 0,0" dur="5.2s" repeatCount="indefinite" />
+          </circle>
+          {/* hair */}
+          <path d="M64 18 q12 8 0 24 q-24 -18 -44 -6 q8 -18 44 -18z" fill="#F5D89B" />
+          {/* face detail */}
+          <path d="M48 40 q8 8 20 0" fill="none" stroke="#C49844" strokeWidth="1.2" strokeLinecap="round" opacity="0.9"/>
+          {/* arm & pen */}
+          <path d="M92 86 q-18 -12 -44 -6" fill="none" stroke="#C68E12" strokeWidth="6" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 70 83; -2 70 83; 0 70 83" dur="3.2s" repeatCount="indefinite" />
+          </path>
+          <path d="M58 82 l-10 6" stroke="#7A4B00" strokeWidth="3" strokeLinecap="round">
+            <animateTransform attributeName="transform" type="rotate" values="0 53 85; -1 53 85; 0 53 85" dur="3.2s" repeatCount="indefinite" />
+          </path>
+        </g>
+
+        {/* small magical sparkles around the paper */}
+        <g transform="translate(540,180)" opacity="0.95">
+          <use href="#spark" x="30" y="-20" width="18" height="18" opacity="0.9">
+            <animateTransform attributeName="transform" type="rotate" values="0 39 -11; 360 39 -11" dur="4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite" />
+          </use>
+          <use href="#spark" x="160" y="-34" width="14" height="14" opacity="0.85">
+            <animateTransform attributeName="transform" type="rotate" values="0 167 -27; 360 167 -27" dur="3.5s" repeatCount="indefinite" begin="0.5s" />
+            <animate attributeName="opacity" values="0.85;0.2;0.85" dur="2.5s" repeatCount="indefinite" begin="0.5s" />
+          </use>
+          <use href="#spark" x="360" y="-6" width="12" height="12" opacity="0.8">
+            <animateTransform attributeName="transform" type="rotate" values="0 366 0; 360 366 0" dur="3s" repeatCount="indefinite" begin="1s" />
+            <animate attributeName="opacity" values="0.8;0.1;0.8" dur="2.2s" repeatCount="indefinite" begin="1s" />
+          </use>
+          <use href="#spark" x="420" y="12" width="10" height="10" opacity="0.75">
+            <animateTransform attributeName="transform" type="rotate" values="0 425 17; 360 425 17" dur="2.8s" repeatCount="indefinite" begin="1.5s" />
+            <animate attributeName="opacity" values="0.75;0.2;0.75" dur="1.8s" repeatCount="indefinite" begin="1.5s" />
+          </use>
+          <use href="#spark" x="240" y="54" width="13" height="13" opacity="0.8">
+            <animateTransform attributeName="transform" type="rotate" values="0 246.5 60.5; 360 246.5 60.5" dur="3.8s" repeatCount="indefinite" begin="2s" />
+            <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2.8s" repeatCount="indefinite" begin="2s" />
+          </use>
+        </g>
+
+        {/* Decorative corner badge (optional accent) */}
+        <g transform="translate(1080,90)">
+          <circle cx="0" cy="0" r="30" fill="#FFF7E0" stroke="#F2D78A" strokeWidth="1.5" opacity="0.95">
+            <animateTransform attributeName="transform" type="rotate" values="0 0 0; 360 0 0" dur="8s" repeatCount="indefinite" />
+          </circle>
+          <path d="M-12 0 h24 M0 -12 v24" stroke="#D99B00" strokeWidth="2" strokeLinecap="round">
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="3s" repeatCount="indefinite" />
+          </path>
+        </g>
+
+        {/* Accessibility: title/desc hidden for screen readers */}
+        <title>Collaborative note taking illustration</title>
+        <desc>Minimal vector illustration of three people writing together on a floating paper with warm gold palette and subtle magical sparkles</desc>
+      </svg>
     </div>
   )
 }
@@ -183,11 +353,11 @@ export function HomePage() {
       </div>
 
       {/* Enhanced Hero Section */}
-      <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-32">
+      <section className="relative overflow-hidden ">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center min-h-[60vh]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[70vh]">
             {/* Left Side - Text Content */}
-            <div className="text-center lg:text-left order-2 lg:order-1">
+            <div className="text-center lg:text-left order-2 lg:order-1 ">
               <div className="animate-fade-in-up">
                 <div className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-full bg-gradient-to-r from-primary/10 via-primary/10 to-primary/10 text-primary text-xs sm:text-sm font-semibold mb-6 sm:mb-8 border border-border/20 shadow-2xl backdrop-blur-md hover:shadow-3xl hover:scale-105 transition-all duration-500">
                   <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 animate-spin text-primary" />
@@ -231,10 +401,10 @@ export function HomePage() {
               </div>
             </div>
 
-            {/* Right Side - Floating Notebook */}
-            <div className="flex justify-center lg:justify-end order-1 lg:order-2">
-              <div className="animate-fade-in-up delay-500">
-                <FloatingNotebook />
+            {/* Right Side - Collaboration SVG */}
+            <div className="flex justify-center lg:justify-end order-1 lg:order-2 h-full  ">
+              <div className="animate-fade-in-up delay-500 w-full h-full">
+                <CollaborationSVG />
               </div>
             </div>
           </div>

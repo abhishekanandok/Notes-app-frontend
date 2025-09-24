@@ -37,8 +37,7 @@ export default function RootLayout({
         <Providers>
           <AuthProvider>
             <NotesProvider>
-              <Navbar />
-              <div className="pt-24">
+              <div className="min-h-screen bg-background pt-24">
                 {children}
               </div>
               <Toaster />

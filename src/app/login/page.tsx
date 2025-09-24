@@ -12,6 +12,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
 import { useToast } from '@/hooks/use-toast'
+import { Navbar } from '@/components/Navbar'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -50,7 +51,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <Navbar />
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-24">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center mb-6">
@@ -147,6 +150,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   )

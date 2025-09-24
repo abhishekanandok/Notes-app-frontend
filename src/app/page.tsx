@@ -3,7 +3,8 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import  {HomePage}  from '@/components/HomePage'
+import { HomePage } from '@/components/HomePage'
+import { Navbar } from '@/components/Navbar'
 
 export default function Home() {
   const { token, loading } = useAuth()
@@ -27,5 +28,12 @@ export default function Home() {
     return null // Will redirect to dashboard
   }
 
-  return <HomePage />
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+        <HomePage />
+      
+    </div>
+  )
 }
