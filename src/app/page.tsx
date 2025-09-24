@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { HomePage } from '@/components/HomePage'
+import  {HomePage}  from '@/components/HomePage'
 
 export default function Home() {
   const { token, loading } = useAuth()

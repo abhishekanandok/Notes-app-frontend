@@ -6,27 +6,46 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { NotebookPen, User, Mail, Lock, ArrowRight, CheckCircle } from 'lucide-react'
+import { NotebookPen, User, Mail, Lock, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { signupSchema, type SignupFormData } from '@/lib/validations/auth'
+import { useToast } from '@/hooks/use-toast'
 
 export default function SignupPage() {
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { signup } = useAuth()
+  const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      username: '',
+      email: '',
+      password: '',
+    },
+  })
 
+  const onSubmit = async (data: SignupFormData) => {
     try {
-      await signup(username, email, password)
+      await signup(data.username, data.email, data.password)
+      toast({
+        title: "🎉 Account created successfully!",
+        description: "Welcome to NotesApp! You can now start taking notes and collaborating with others.",
+        variant: "success",
+      })
+      reset()
     } catch {
-      setError('Failed to create account. Please try again.')
-    } finally {
-      setLoading(false)
+      toast({
+        title: "❌ Failed to create account",
+        description: "Please check your information and try again. Make sure your email is valid and username is available.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -55,7 +74,7 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="username" className="text-sm font-medium text-foreground">
                   Username
@@ -66,12 +85,13 @@ export default function SignupPage() {
                     id="username"
                     type="text"
                     placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10"
-                    required
+                    className={`pl-10 ${errors.username ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('username')}
                   />
                 </div>
+                {errors.username && (
+                  <p className="text-sm text-destructive">{errors.username.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -84,12 +104,13 @@ export default function SignupPage() {
                     id="email"
                     type="email"
                     placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
+                    className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('email')}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -100,24 +121,29 @@ export default function SignupPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
+                    className={`pl-10 pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('password')}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  Password must be at least 8 characters with uppercase, lowercase, and number
                 </div>
               </div>
 
-              {error && (
-                <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   'Creating account...'
                 ) : (
                   <>
@@ -126,6 +152,8 @@ export default function SignupPage() {
                   </>
                 )}
               </Button>
+
+              
             </form>
 
             <div className="mt-6 space-y-3">

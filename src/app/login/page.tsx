@@ -7,27 +7,45 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { NotebookPen, Mail, Lock, ArrowRight } from 'lucide-react'
+import { NotebookPen, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
+import { useToast } from '@/hooks/use-toast'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
 
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(email, password)
-    } catch (err) {
-      setError('Invalid email or password')
-    } finally {
-      setLoading(false)
+      await login(data.email, data.password)
+      toast({
+        title: "🎉 Welcome back!",
+        description: "You've successfully signed in to your NotesApp account.",
+        variant: "success",
+      })
+      router.push('/dashboard')
+    } catch {
+      toast({
+        title: "❌ Login failed",
+        description: "Invalid email or password. Please check your credentials and try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -56,7 +74,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email
@@ -67,12 +85,13 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
+                    className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('email')}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -83,24 +102,26 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
+                    className={`pl-10 pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('password')}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
               </div>
 
-              {error && (
-                <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   'Signing in...'
                 ) : (
                   <>
@@ -111,14 +132,18 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <Link
-                href="/signup"
-                className="font-medium text-primary hover:text-primary/80 transition-colors"
-              >
-                Sign up
-              </Link>
+            <div className="mt-6 space-y-3">
+              <div className="text-center text-sm">
+                <span className="text-muted-foreground">Don&apos;t have an account? </span>
+                <Link
+                  href="/signup"
+                  className="font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </div>
+              
+              
             </div>
           </CardContent>
         </Card>
