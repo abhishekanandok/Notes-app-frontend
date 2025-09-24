@@ -1,20 +1,65 @@
 'use client'
 
-import { useState } from 'react'
-import { useNotes } from '@/contexts/NotesContext'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Plus, X, MoreVertical, Edit, Trash2, Move } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SearchBar } from '@/components/SearchBar'
+import useNotesService from '@/services/notesService'
+import useFoldersService from '@/services/foldersService'
+import type { Note } from '@/services/notesService'
+import type { Folder } from '@/services/foldersService'
 
 export function NoteList() {
-  const { filteredNotes, searchQuery, createNote, folders, updateNote, deleteNote } = useNotes()
   const router = useRouter()
+  const notesService = useNotesService()
+  const foldersService = useFoldersService()
+  
+  const [notes, setNotes] = useState<Note[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [noteTitle, setNoteTitle] = useState('')
   const [noteContent, setNoteContent] = useState('')
   const [selectedFolderId, setSelectedFolderId] = useState<string>('')
   const [isCreating, setIsCreating] = useState(false)
   const [showNoteActions, setShowNoteActions] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Filter notes based on search query
+  const filteredNotes = (notes || []).filter(note => 
+    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    note.content.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch notes and folders in parallel
+        const [notesResult, foldersResult] = await Promise.all([
+          notesService.getAllNotes(),
+          foldersService.getAllFolders()
+        ])
+
+        if (notesResult.success && notesResult.data) {
+          setNotes(notesResult.data.data)
+        }
+
+        if (foldersResult.success && foldersResult.data) {
+          setFolders(foldersResult.data.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,17 +67,21 @@ export function NoteList() {
 
     setIsCreating(true)
     try {
-      const newNote = await createNote(
-        noteTitle.trim(),
-        noteContent.trim(),
-        selectedFolderId || undefined
-      )
-      setNoteTitle('')
-      setNoteContent('')
-      setSelectedFolderId('')
-      setShowCreateModal(false)
-      // Navigate to the new note
-      router.push(`/notes/${newNote.id}`)
+      const result = await notesService.createNote({
+        title: noteTitle.trim(),
+        content: noteContent.trim(),
+        folderId: selectedFolderId || null
+      })
+      
+      if (result.success && result.data) {
+        setNotes(prev => [result.data!, ...prev])
+        setNoteTitle('')
+        setNoteContent('')
+        setSelectedFolderId('')
+        setShowCreateModal(false)
+        // Navigate to the new note
+        router.push(`/dashboard/notes/${result.data.id}`)
+      }
     } catch (error) {
       console.error('Failed to create note:', error)
     } finally {
@@ -58,8 +107,11 @@ export function NoteList() {
   const handleDeleteNote = async (noteId: string) => {
     if (confirm('Are you sure you want to delete this note?')) {
       try {
-        await deleteNote(noteId)
-        setShowNoteActions(null)
+        const result = await notesService.deleteNote(noteId)
+        if (result.success) {
+          setNotes(prev => prev.filter(note => note.id !== noteId))
+          setShowNoteActions(null)
+        }
       } catch (error) {
         console.error('Failed to delete note:', error)
       }
@@ -68,11 +120,25 @@ export function NoteList() {
 
   const handleMoveNote = async (noteId: string, folderId: string | null) => {
     try {
-      await updateNote(noteId, { folderId })
-      setShowNoteActions(null)
+      const result = await notesService.updateNote(noteId, { folderId })
+      if (result.success && result.data) {
+        setNotes(prev => prev.map(note => 
+          note.id === noteId ? result.data! : note
+        ))
+        setShowNoteActions(null)
+      }
     } catch (error) {
       console.error('Failed to move note:', error)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+        <p>Loading notes...</p>
+      </div>
+    )
   }
 
   if (searchQuery) {
@@ -189,6 +255,14 @@ export function NoteList() {
         </button>
       </div>
       
+      {/* Search Bar */}
+      <div className="mb-6">
+        <SearchBar 
+          onSearch={setSearchQuery}
+          placeholder="Search notes by title or content..."
+        />
+      </div>
+      
       {filteredNotes.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -285,7 +359,7 @@ export function NoteList() {
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                 >
                   <option value="">No folder</option>
-                  {folders.map((folder) => (
+                  {(folders || []).map((folder) => (
                     <option key={folder.id} value={folder.id}>
                       {folder.name}
                     </option>

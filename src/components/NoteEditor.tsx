@@ -1,27 +1,30 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useNotes } from '@/contexts/NotesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import useWebSocketService from '@/services/websocketService'
 import useNotesService from '@/services/notesService'
+import type { Note } from '@/services/notesService'
 
 interface NoteEditorProps {
   noteId: string
+  note?: Note
+  onUpdate?: (note: Note) => void
 }
 
-export function NoteEditor({ noteId }: NoteEditorProps) {
-  const { activeNote, updateNoteContent } = useNotes()
+export function NoteEditor({ noteId, note, onUpdate }: NoteEditorProps) {
   const { token } = useAuth()
-  const [content, setContent] = useState(activeNote?.content || '')
+  const notesService = useNotesService()
+  const websocketService = useWebSocketService()
+  const [content, setContent] = useState(note?.content || '')
   const [isConnected, setIsConnected] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (activeNote) {
-      setContent(activeNote.content)
+    if (note) {
+      setContent(note.content)
     }
-  }, [activeNote])
+  }, [note])
 
   useEffect(() => {
     if (token && noteId) {
@@ -52,7 +55,10 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
           // Update content from other users
           if (data.content !== content) {
             setContent(data.content)
-            updateNoteContent(noteId, data.content)
+            // Call onUpdate if provided
+            if (onUpdate && note) {
+              onUpdate({ ...note, content: data.content })
+            }
           }
         },
         error: (data) => {
@@ -70,7 +76,11 @@ export function NoteEditor({ noteId }: NoteEditorProps) {
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent)
-    updateNoteContent(noteId, newContent)
+    
+    // Call onUpdate if provided
+    if (onUpdate && note) {
+      onUpdate({ ...note, content: newContent })
+    }
 
     // Debounce WebSocket updates
     if (timeoutRef.current) {

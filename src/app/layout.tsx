@@ -3,7 +3,6 @@ import { Kalam, Caveat } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { NotesProvider } from "@/contexts/NotesContext";
 import { Navbar } from "@/components/Navbar";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -36,12 +35,11 @@ export default function RootLayout({
       >
         <Providers>
           <AuthProvider>
-            <NotesProvider>
+            <Navbar />
               <div className="min-h-screen bg-background pt-24">
                 {children}
               </div>
               <Toaster />
-            </NotesProvider>
           </AuthProvider>
         </Providers>
       </body>
