@@ -557,32 +557,9 @@ export default function RealTimeNotePage() {
     }
   }
 
-  // Test WebSocket connection
-  const testWebSocketConnection = () => {
-    console.log('🧪 Testing WebSocket connection...')
-    const status = wsService.getConnectionStatus()
-    console.log('Connection status:', status)
-    
-    if (status === 'connected') {
-      console.log('✅ WebSocket is connected, sending test message')
-      wsService.startTyping()
-    } else {
-      console.log('❌ WebSocket is not connected, status:', status)
-      console.log('🔄 Attempting to reconnect...')
-      if (user?.token) {
-        wsService.connect(noteId, user.token)
-      }
-    }
-  }
+  
 
-  // Debug function to check WebSocket state
-  const debugWebSocketState = () => {
-    console.log('🔍 WebSocket Debug Info:')
-    console.log('- Connection Status:', wsService.getConnectionStatus())
-    console.log('- Note ID:', noteId)
-    console.log('- User Token:', user?.token ? 'Present' : 'Missing')
-    console.log('- User ID:', user?.id)
-  }
+  
 
   // Navigation functions
   const goBack = () => {

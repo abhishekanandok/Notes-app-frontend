@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Plus, X, MoreVertical, Edit, Trash2, Move } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SearchBar } from '@/components/SearchBar'
 import useNotesService from '@/services/notesService'
 import useFoldersService from '@/services/foldersService'
 import type { Note } from '@/services/notesService'
@@ -255,13 +254,7 @@ export function NoteList() {
         </button>
       </div>
       
-      {/* Search Bar */}
-      <div className="mb-6">
-        <SearchBar 
-          onSearch={setSearchQuery}
-          placeholder="Search notes by title or content..."
-        />
-      </div>
+      
       
       {filteredNotes.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">

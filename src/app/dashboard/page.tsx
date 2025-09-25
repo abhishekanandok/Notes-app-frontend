@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Edit, Save, X, Trash2, FolderOpen, FileText, Share2, Users, Zap } from 'lucide-react'
+import { Plus, Edit, Save, X, Trash2, FolderOpen, FileText, Share2, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from '@/hooks/use-toast'
 import useNotesService from '@/services/notesService'
@@ -121,13 +121,7 @@ export default function DashboardPage() {
     setShowNoteModal(true)
   }
 
-  const openEditNoteModal = (note: Note) => {
-    setEditingNote(note)
-    setNoteTitle(note.title)
-    setNoteContent(note.content)
-    setSelectedFolderId(note.folder?.id || '')
-    setShowNoteModal(true)
-  }
+ 
 
   const closeNoteModal = () => {
     setShowNoteModal(false)

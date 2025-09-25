@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Users, Wifi, WifiOff, Circle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -84,7 +84,7 @@ export function CollaborationIndicator({
 
               {otherCollaborators.length === 0 && isConnected && (
                 <div className="text-sm text-muted-foreground">
-                  You're the only one editing this note
+                  You are the only one editing this note
                 </div>
               )}
             </div>
