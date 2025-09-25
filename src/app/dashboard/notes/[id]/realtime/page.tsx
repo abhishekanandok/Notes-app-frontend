@@ -607,40 +607,46 @@ export default function RealTimeNotePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto p-2 sm:p-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={goBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <Button variant="ghost" onClick={goToDashboard}>
-              <Home className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
+        <div className="flex flex-col space-y-4 mb-6">
+          {/* Top row - Navigation and Connection */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button variant="ghost" size="sm" onClick={goBack} className="h-8 px-2 sm:px-3">
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={goToDashboard} className="h-8 px-2 sm:px-3">
+                <Home className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+            </div>
+            
             <div className="flex items-center space-x-2">
               {connectionStatus === 'connected' ? (
                 <Wifi className="h-4 w-4 text-green-500" />
               ) : (
                 <WifiOff className="h-4 w-4 text-red-500" />
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">
                 {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
               </span>
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          {/* Bottom row - Users and Save */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             {/* Connected Users */}
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <div className="flex space-x-1">
+            <div className="flex items-center space-x-2 min-w-0">
+              <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex space-x-1 overflow-x-auto">
                 {connectedUsers.map((user) => (
                   <Badge 
                     key={user.id} 
                     variant="secondary"
                     style={{ backgroundColor: user.color, color: 'white' }}
+                    className="text-xs whitespace-nowrap flex-shrink-0"
                   >
                     {user.username}
                   </Badge>
@@ -648,36 +654,33 @@ export default function RealTimeNotePage() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-2">
-              {autoSaveStatus === 'saving' && (
-                <div className="flex items-center space-x-1 text-sm text-blue-500">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-                  <span>Saving...</span>
-                </div>
-              )}
-              {autoSaveStatus === 'saved' && (
-                <div className="flex items-center space-x-1 text-sm text-green-500">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Saved</span>
-                </div>
-              )}
-              <Button onClick={handleSave} disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save'}
+            {/* Save Status and Button */}
+            <div className="flex items-center justify-between sm:justify-end space-x-2">
+              <div className="flex items-center space-x-2">
+                {autoSaveStatus === 'saving' && (
+                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-blue-500">
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+                    <span className="hidden sm:inline">Saving...</span>
+                  </div>
+                )}
+                {autoSaveStatus === 'saved' && (
+                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-green-500">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="hidden sm:inline">Saved</span>
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleSave} disabled={saving} size="sm" className="h-8">
+                <Save className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save'}</span>
               </Button>
-              {/* <Button onClick={testWebSocketConnection} variant="outline">
-                Test WS
-              </Button>
-              <Button onClick={debugWebSocketState} variant="outline">
-                Debug WS
-              </Button> */}
             </div>
           </div>
         </div>
 
         {/* Note Editor */}
-        <Card>
-          <CardHeader>
+        <Card className="h-[calc(100vh-200px)] sm:h-auto">
+          <CardHeader className="pb-3">
             <div className="relative">
               <Input
                 ref={titleRef}
@@ -687,21 +690,21 @@ export default function RealTimeNotePage() {
                 onKeyUp={handleTypingStop}
                 onBlur={handleInputBlur}
                 placeholder="Note title..."
-                className="text-2xl font-bold border-none shadow-none focus-visible:ring-0"
+                className="text-lg sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 pr-20"
               />
               {/* Show typing indicators in title */}
               {typingUsers.length > 0 && (
-                <div className="absolute top-0 right-0 text-xs text-blue-500 animate-pulse">
+                <div className="absolute top-0 right-0 text-xs text-blue-500 animate-pulse max-w-20 truncate">
                   {typingUsers.length === 1 
-                    ? `${typingUsers[0]} is typing...`
-                    : `${typingUsers.join(', ')} are typing...`
+                    ? `${typingUsers[0]} typing...`
+                    : `${typingUsers.length} typing...`
                   }
                 </div>
               )}
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="relative">
+          <CardContent className="p-3 sm:p-6">
+            <div className="relative h-full">
               <Textarea
                 ref={contentRef}
                 value={content}
@@ -711,7 +714,7 @@ export default function RealTimeNotePage() {
                 onKeyUp={handleTypingStop}
                 onBlur={handleInputBlur}
                 placeholder="Start writing your note..."
-                className="min-h-[500px] border-none shadow-none focus-visible:ring-0 resize-none"
+                className="w-full h-[calc(100vh-300px)] sm:min-h-[500px] border-none shadow-none focus-visible:ring-0 resize-none text-sm sm:text-base"
               />
               
               {/* Render cursor overlays for other users */}
@@ -732,17 +735,17 @@ export default function RealTimeNotePage() {
                       key={user.id}
                       className="absolute pointer-events-none"
                       style={{
-                        left: `${currentColumn * 8.5}px`, // More accurate character width
-                        top: `${currentLine * 20 + 8}px`, // Line height + padding
+                        left: `${currentColumn * 7}px`, // Smaller character width for mobile
+                        top: `${currentLine * 18 + 6}px`, // Smaller line height for mobile
                         zIndex: 10
                       }}
                     >
                       <div
-                        className="w-0.5 h-5 animate-pulse"
+                        className="w-0.5 h-4 sm:h-5 animate-pulse"
                         style={{ backgroundColor: color }}
                       />
                       <div
-                        className="absolute -top-6 left-0 px-1 py-0.5 text-xs text-white rounded whitespace-nowrap"
+                        className="absolute -top-5 sm:-top-6 left-0 px-1 py-0.5 text-xs text-white rounded whitespace-nowrap max-w-20 truncate"
                         style={{ backgroundColor: color }}
                       >
                         {user.username}
@@ -759,12 +762,12 @@ export default function RealTimeNotePage() {
 
 
         {/* Note Info */}
-        <div className="mt-6 text-sm text-muted-foreground">
-          <p>Note ID: {note.id}</p>
-          <p>Created: {new Date(note.createdAt).toLocaleString()}</p>
-          <p>Last Updated: {new Date(note.updatedAt).toLocaleString()}</p>
+        <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-muted-foreground space-y-1">
+          <p className="truncate">ID: {note.id}</p>
+          <p>Created: {new Date(note.createdAt).toLocaleDateString()}</p>
+          <p>Updated: {new Date(note.updatedAt).toLocaleDateString()}</p>
           {note.folder && (
-            <p>Folder: {note.folder.name}</p>
+            <p className="truncate">Folder: {note.folder.name}</p>
           )}
         </div>
       </div>
